@@ -6,8 +6,9 @@ import zipfile
 import subprocess
 import urllib.request
 
-BASE_URL = "https://raw.githubusercontent.com/juixcx/jui-99/bf3fd42d3988f5db2a4ec8249227c81313137592"
-
+# ============================================================
+# ENGINES — git only
+# ============================================================
 ENGINES = {
     "luraph_14.9": {
         "name": "Luraph v14.9",
@@ -24,33 +25,61 @@ ENGINES = {
         "bin_dir": "bin",
         "bin_name": "luau-ast",
     },
-    "clyde": {"name": "Clyde", "type": "zip",
-              "zip_url": f"{BASE_URL}/ClydeDeobfuscator-main.zip",
-              "extract_dir": "/tmp/engines/clyde", "cli_args": []},
-    "77fuscator": {"name": "77fuscator", "type": "zip",
-                   "zip_url": f"{BASE_URL}/77fuscatorDeobfuscator-main.zip",
-                   "extract_dir": "/tmp/engines/77fuscator", "cli_args": []},
-    "ironveil": {"name": "Ironveil V1", "type": "zip",
-                 "zip_url": f"{BASE_URL}/Ironveil-Deobfuscator-V1-main.zip",
-                 "extract_dir": "/tmp/engines/ironveil", "cli_args": []},
-    "luaobfuscator": {"name": "LuaObfuscator", "type": "zip",
-                      "zip_url": f"{BASE_URL}/LuaObfuscator-Deobfuscator-main.zip",
-                      "extract_dir": "/tmp/engines/luaobfuscator", "cli_args": []},
-    "moonsec": {"name": "MoonSec", "type": "zip",
-                "zip_url": f"{BASE_URL}/MoonsecDeobfuscator-master.zip",
-                "extract_dir": "/tmp/engines/moonsec", "cli_args": []},
-    "prometheus": {"name": "Prometheus", "type": "zip",
-                   "zip_url": f"{BASE_URL}/Prometheus-Deobfuscator-main.zip",
-                   "extract_dir": "/tmp/engines/prometheus", "cli_args": []},
-    "moonveil": {"name": "Moonveil", "type": "zip",
-                 "zip_url": f"{BASE_URL}/moonveilvro-main.zip",
-                 "extract_dir": "/tmp/engines/moonveil", "cli_args": []},
-    "ib2": {"name": "IronBrew 2", "type": "zip",
-            "zip_url": f"{BASE_URL}/ib2-deobf.zip",
-            "extract_dir": "/tmp/engines/ib2", "cli_args": []},
-    "hercules": {"name": "Hercules", "type": "zip",
-                 "zip_url": f"{BASE_URL}/hercules-deobfuscator-main.zip",
-                 "extract_dir": "/tmp/engines/hercules", "cli_args": []},
+    "prometheus_v2": {
+        "name": "Prometheus v2 (0x251)",
+        "type": "git",
+        "repo": "https://github.com/0x251/Prometheus-DeobfuscatorV2.git",
+        "clone_dir": "/tmp/engines/prometheus_v2",
+        "cli_dir": ".",
+        "cli_file": None,  # autodetect
+        "cli_args": [],
+    },
+    "prometheus": {
+        "name": "Prometheus (official)",
+        "type": "git",
+        "repo": "https://github.com/levno-710/Prometheus.git",
+        "clone_dir": "/tmp/engines/prometheus",
+        "cli_dir": ".",
+        "cli_file": None,
+        "cli_args": [],
+    },
+    "unveilr": {
+        "name": "Unveilr (IronBrew 2)",
+        "type": "git",
+        "repo": "https://github.com/Unveilr/unveilr.git",
+        "clone_dir": "/tmp/engines/unveilr",
+        "cli_dir": ".",
+        "cli_file": None,
+        "cli_args": [],
+    },
+    "moonsec_v3": {
+        "name": "MoonSec V3",
+        "type": "git",
+        "repo": "https://github.com/PandaGamingTV/MoonSecV3-Deobfuscator.git",
+        "clone_dir": "/tmp/engines/moonsec_v3",
+        "cli_dir": ".",
+        "cli_file": None,
+        "cli_args": [],
+    },
+    "luaobfuscator": {
+        "name": "LuaObfuscator",
+        "type": "git",
+        "repo": "https://github.com/LuaObfuscator/LuaObfuscator.git",
+        "clone_dir": "/tmp/engines/luaobfuscator",
+        "cli_dir": ".",
+        "cli_file": None,
+        "cli_args": [],
+    },
+    "luadec": {
+        "name": "Luadec (bytecode)",
+        "type": "git",
+        "repo": "https://github.com/lua-tools/luadec.git",
+        "clone_dir": "/tmp/engines/luadec",
+        "cli_dir": ".",
+        "cli_file": None,
+        "cli_args": [],
+        "make": True,
+    },
 }
 
 SETUP_STATUS = {}
@@ -64,6 +93,8 @@ def _setup_git(cfg):
     if not os.path.exists(cd):
         subprocess.run(["git", "clone", "--depth=1", cfg["repo"], cd],
                        check=True, capture_output=True, timeout=300)
+
+    # bin download ถ้ามี
     if cfg.get("bin_url"):
         bd = os.path.join(cd, cfg["cli_dir"], cfg["bin_dir"])
         os.makedirs(bd, exist_ok=True)
@@ -77,28 +108,15 @@ def _setup_git(cfg):
             for f in os.listdir(bd):
                 fp = os.path.join(bd, f)
                 if os.path.isfile(fp):
-                    try:
-                        os.chmod(fp, 0o755)
-                    except Exception:
-                        pass
+                    try: os.chmod(fp, 0o755)
+                    except: pass
 
-
-def _setup_zip(cfg):
-    ed = cfg["extract_dir"]
-    if os.path.exists(ed) and os.listdir(ed):
-        return
-    os.makedirs(ed, exist_ok=True)
-    zp = f"/tmp/{os.path.basename(cfg['zip_url'])}"
-    if not os.path.exists(zp):
-        urllib.request.urlretrieve(cfg["zip_url"], zp)
-    with zipfile.ZipFile(zp) as z:
-        z.extractall(ed)
-    items = os.listdir(ed)
-    if len(items) == 1 and os.path.isdir(os.path.join(ed, items[0])):
-        inner = os.path.join(ed, items[0])
-        for f in os.listdir(inner):
-            shutil.move(os.path.join(inner, f), os.path.join(ed, f))
-        os.rmdir(inner)
+    # make ถ้าจำเป็น (luadec)
+    if cfg.get("make"):
+        try:
+            subprocess.run(["make", "-j4"], cwd=cd, timeout=300, capture_output=True)
+        except Exception:
+            pass
 
 
 def setup_engine(key):
@@ -106,10 +124,7 @@ def setup_engine(key):
         return True, "ok"
     cfg = ENGINES[key]
     try:
-        if cfg["type"] == "git":
-            _setup_git(cfg)
-        else:
-            _setup_zip(cfg)
+        _setup_git(cfg)
         SETUP_STATUS[key] = "complete"
         return True, "ok"
     except Exception as e:
@@ -119,7 +134,8 @@ def setup_engine(key):
 
 def _find_cli(d):
     for c in ["main.py", "cli.py", "deobf.py", "deobfuscate.py",
-              "index.js", "app.js", "run.py", "__main__.py"]:
+              "unveilr.py", "prometheus.py", "run.py",
+              "__main__.py", "index.js", "app.js"]:
         for root, _, files in os.walk(d):
             if c in files:
                 return root, c
@@ -131,31 +147,36 @@ def _find_cli(d):
 # ============================================================
 def detect(script: str):
     head = script[:5000]
+
     if "wearedevs.net/obfuscator" in head:
         return ("WeAreDevs", "1.0.0", None, "high")
+
     m = re.search(r"Luraph Obfuscator v?([\d.]+)", head, re.I)
     if m:
         return ("Luraph", m.group(1), "luraph_14.9", "high")
     if re.search(r"lura\.ph|luraph", head, re.I):
         return ("Luraph", "unknown", "luraph_14.9", "medium")
+
+    # Prometheus — v2 ก่อน
+    if re.search(r"prometheus[\s\-_]?v?2", head, re.I):
+        return ("Prometheus", "2", "prometheus_v2", "high")
     if re.search(r"prometheus", head, re.I):
         return ("Prometheus", "unknown", "prometheus", "high")
-    if re.search(r"moonveil", head, re.I):
-        return ("Moonveil", "unknown", "moonveil", "high")
+
+    if re.search(r"moonsec.{0,10}v?3", head, re.I):
+        return ("MoonSec", "3", "moonsec_v3", "high")
     if re.search(r"moonsec", head, re.I):
-        return ("MoonSec", "unknown", "moonsec", "high")
+        return ("MoonSec", "unknown", "moonsec_v3", "medium")
+
+    if re.search(r"moonveil", head, re.I):
+        return ("Moonveil", "unknown", None, "high")
+
     if re.search(r"ironbrew|ib2", head, re.I):
-        return ("IronBrew", "2", "ib2", "high")
-    if re.search(r"hercules", head, re.I):
-        return ("Hercules", "unknown", "hercules", "high")
-    if re.search(r"77fuscator", head, re.I):
-        return ("77fuscator", "unknown", "77fuscator", "high")
-    if re.search(r"ironveil", head, re.I):
-        return ("Ironveil", "V1", "ironveil", "high")
-    if re.search(r"clyde", head, re.I):
-        return ("Clyde", "unknown", "clyde", "medium")
+        return ("IronBrew", "2", "unveilr", "high")
+
     if re.search(r"luaobfuscator", head, re.I):
         return ("LuaObfuscator", "unknown", "luaobfuscator", "high")
+
     return ("Unknown", "unknown", None, "none")
 
 
@@ -176,13 +197,13 @@ def deobfuscate(script: str, engine_key: str):
     with open(in_path, "w", encoding="utf-8") as f:
         f.write(script)
 
-    if cfg["type"] == "git":
-        cli_dir = os.path.join(cfg["clone_dir"], cfg["cli_dir"])
-        cli_file = cfg["cli_file"]
-    else:
-        cli_dir, cli_file = _find_cli(cfg["extract_dir"])
+    cli_dir = os.path.join(cfg["clone_dir"], cfg["cli_dir"])
+    cli_file = cfg.get("cli_file")
+
+    if not cli_file:
+        cli_dir, cli_file = _find_cli(cfg["clone_dir"])
         if not cli_dir:
-            return None, f"CLI not found in {cfg['extract_dir']}"
+            return None, f"CLI file not found in {cfg['clone_dir']}\ncontents: {os.listdir(cfg['clone_dir'])[:30]}"
 
     args = ["python", cli_file, in_path, "-o", out_path] + cfg.get("cli_args", [])
     try:
