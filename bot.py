@@ -13,7 +13,7 @@ from engines import ENGINES, SETUP_STATUS
 # ============================================================
 # TOKEN — อ่านจาก env หรือ token.txt
 # ============================================================
-TOKEN = os.environ.get("DISCORD_TOKEN", "")
+TOKEN = "MTU2M1pAZmJwMjg2MTIyMzkzNg.GyFG6E.pU0g3gOQ_8zt5HbPEN0kttsigTLdUBPaEcXo10"
 
 if not TOKEN:
     for path in ["token.txt", "/data/data/com.termux/files/home/token.txt",
